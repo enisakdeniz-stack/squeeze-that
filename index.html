@@ -44,7 +44,7 @@ body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--body);
 .btn-ghost{background:rgba(255,255,255,.07);border:1px solid var(--line)}
 .btn-ghost:disabled{opacity:.45;cursor:default}
 .btn-wide{width:100%}
-.btn:focus-visible,.icon-btn:focus-visible,.follow:focus-visible,.seg button:focus-visible,.swatch:focus-visible{outline:3px solid var(--sebum);outline-offset:2px}
+.btn:focus-visible,.icon-btn:focus-visible,.follow:focus-visible,.seg button:focus-visible,.swatch:focus-visible,.pick button:focus-visible{outline:3px solid var(--sebum);outline-offset:2px}
 .follow{color:var(--ink-soft);font-size:13px;text-align:center;text-decoration:none}
 .follow:hover{color:var(--ink)}
 .stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
@@ -59,6 +59,12 @@ body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--body);
 .seg{display:grid;grid-template-columns:1fr 1fr;background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius:12px;padding:3px;gap:3px}
 .seg button{appearance:none;border:0;background:transparent;color:var(--ink-soft);font:700 14px/1 var(--body);padding:11px 8px;border-radius:9px;cursor:pointer}
 .seg button[aria-pressed=true]{background:var(--glove);color:#fff}
+.seg3{grid-template-columns:1fr 1fr 1fr}
+.pick{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.pick button{appearance:none;border:1px solid var(--line);background:var(--chip);color:var(--ink);font:800 14px/1.15 var(--body);padding:10px 4px;border-radius:12px;cursor:pointer;min-width:0}
+.pick button small{display:block;font-weight:600;font-size:11px;color:var(--ink-soft);margin-top:3px}
+.pick button[aria-pressed=true]{background:var(--glove);border-color:var(--glove);color:#fff}
+.pick button[aria-pressed=true] small{color:rgba(255,255,255,.82)}
 .client-head{display:flex;gap:14px;align-items:center}
 .avatar{flex:0 0 auto;width:64px;height:64px;border-radius:50%;display:grid;place-items:center;font-family:var(--display);font-size:30px;color:rgba(50,24,16,.72);box-shadow:inset 0 -8px 14px rgba(0,0,0,.2),inset 0 6px 10px rgba(255,255,255,.25)}
 .quote{margin:0;font-size:17px;line-height:1.4;color:var(--ink)}
@@ -156,6 +162,7 @@ body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--body);
 <div class='stat'><b id='mCombo'>0</b><span>Best combo</span></div>
 </div>
 <button id='startBtn' class='btn btn-primary btn-wide' type='button'>Open the clinic</button>
+<button id='freeBtn' class='btn btn-ghost btn-wide' type='button'>Free salon</button>
 <button id='shopBtn' class='btn btn-ghost btn-wide' type='button'>Tool shop</button>
 <div class='setting'>
 <span class='eyebrow'>Hold tools with your</span>
@@ -207,6 +214,24 @@ body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--body);
 <div class='stats' id='deStats'></div>
 <button id='deShop' class='btn btn-primary btn-wide' type='button'>Visit the tool shop</button>
 <button id='deNext' class='btn btn-ghost btn-wide' type='button'>Open day 2</button>
+</section>
+</div>
+<div id='free' class='sheet-wrap' hidden>
+<section class='sheet' aria-labelledby='frTitle'>
+<div><p class='eyebrow'>No queue, no pressure</p><h2 class='big' id='frTitle'>Free salon</h2></div>
+<p class='lede'>Pick any area and any tool. Play it as many times as you like.</p>
+<div class='setting'><span class='eyebrow'>Area</span><div class='pick' id='frArea' role='group' aria-label='Area'></div></div>
+<div class='setting' id='frTechWrap'><span class='eyebrow'>Technique</span><div class='seg' role='group' aria-label='Technique'>
+<button id='frFinger' type='button' aria-pressed='true'>Fingers</button>
+<button id='frLoop' type='button' aria-pressed='false'>Loop tool</button>
+</div></div>
+<div class='setting'><span class='eyebrow'>Difficulty</span><div class='seg seg3' role='group' aria-label='Difficulty' id='frDiff'>
+<button type='button' data-d='0' aria-pressed='false'>Easy</button>
+<button type='button' data-d='1' aria-pressed='true'>Normal</button>
+<button type='button' data-d='2' aria-pressed='false'>Hard</button>
+</div></div>
+<button id='frGo' class='btn btn-primary btn-wide' type='button'>Start</button>
+<button id='frBack' class='btn btn-ghost btn-wide' type='button'>Clinic menu</button>
 </section>
 </div>
 <div id='shop' class='sheet-wrap' hidden>
@@ -343,6 +368,7 @@ gentle:{text:'Keep irritation low', bonus:15, quotes:['Big date tonight. No redn
 fast:{text:'Finish in time', bonus:15, quotes:['I have a meeting in 20 minutes!','Quick one, my parking runs out soon.','Lunch break. Make it fast!']},
 combo:{text:'Reach a x5 combo', bonus:15, quotes:['I want to see a streak!','Show me how a pro does it.','My friend said you never miss.']},
 perfect:{text:'Land 3 perfects', bonus:15, quotes:['My last clinic was sloppy...','Make it textbook, please.','I watch these videos every night. Impress me.']},
+free:{text:'Free play', bonus:0, quotes:['']},
 calm:{text:'No flinches', bonus:25, quotes:['Please, I really hate pain.','My ear is super ticklish...','Last time I kicked the nurse. Sorry in advance.']},
 };
 function grid(r, w, h){ w = Math.ceil(w) + 2; h = Math.ceil(h) + 2; const a = new Float32Array(w * h); for (let i = 0; i < a.length; i++) a[i] = r(); return {w, h, a}; }
@@ -525,11 +551,11 @@ const pool = A.mode === 'boss' ? ['calm', 'fast'] : A.mode === 'wax' ? ['gentle'
 const req = pick(r, pool);
 return {day, idx, A, name:pick(r, NAMES), tone:pick(r, TONES), req, quote:pick(r, REQ[req].quotes), seed:Math.floor(r() * 1e9)};
 }
-const diffOf = C => (C.day - 1) + C.idx * .25;
+const diffOf = C => C.d != null ? C.d : (C.day - 1) + C.idx * .25;
 const state = {phase:'menu', client:null, A:null, t:0, playT:0, done:0, total:0, damage:0, flinch:0, longest:0, lastWarn:-9, finishAt:0,
 particles:[], popups:[], marks:[], shake:0, shakeX:0, shakeY:0, combo:0, maxCombo:0, perfects:0, tips:0, slow:0, timeLimit:0};
 let BH = [], boss = null, sel = null, sq = null;
-const tool = {x:300, y:520, px:300, py:520, sx:0, sy:0, ox:0, oy:0, type:'', p:0, down:false, id:null, target:null, idle:0, lt:0, lastSnd:0, align:1};
+const tool = {x:300, y:520, px:300, py:520, sx:0, sy:0, ox:0, oy:0, type:'', p:0, down:false, id:null, target:null, idle:0, lt:0, lastSnd:0, align:1, vel:0, lx:0, ly:0, still:0};
 const ptrs = new Map();
 function makeBH(r, x, y, rad){
 const shape = []; for (let k = 0; k < 9; k++) shape.push(.8 + r() * .34);
@@ -593,11 +619,15 @@ if (A.mode === 'squeeze' || A.mode === 'tool') {
 const h = d >= 1.5 ? Math.min(4, Math.floor(d / 1.5)) : 0;
 BH.slice().sort(() => r() - .5).slice(0, h).forEach(b => { b.hidden = true; });
 }
-const bw = clamp(.24 - d * .018, .1, .24) + (P.upg.mag >= 2 ? .03 * (P.upg.mag - 1) : 0);
+const bw = clamp(.22 - d * .03, .09, .22) + (P.upg.mag >= 2 ? .03 * (P.upg.mag - 1) : 0);
+const slide = A.mode === 'squeeze' && d >= 1;
 BH.forEach(b => {
 b.stub = clamp(b.stub + Math.min(.15, d * .02) - .06 * P.upg.steam + (A.mode === 'wax' ? between(r, 0, .2) : 0), .08, .6);
 const c = between(r, .46, .66); b.lo = Math.max(b.stub + .04, c - bw / 2); b.hi = b.lo + bw;
 if (b.hi > .9) { b.hi = .9; b.lo = .9 - bw; }
+b.lo0 = b.lo; b.hi0 = b.hi; b.slT = 0;
+b.slAmp = slide ? clamp(.06 + (d - 1) * .04, .06, .22) : 0;
+b.slSpd = (.9 + Math.min(1.5, (d - 1) * .3)) * between(r, .85, 1.15);
 });
 state.total = boss ? 1 : BH.length;
 if (C.req === 'fast') state.timeLimit = A.mode === 'boss' ? 150 : A.mode === 'wax' ? 60 : Math.round(25 + state.total * 4.5);
@@ -891,9 +921,9 @@ function gripOff(type){ if (type === 'mouse') return [0, 0]; return P.hand === '
 function handleAngDefault(){ return P.hand === 'left' ? Math.atan2(96, -62) : Math.atan2(96, 62); }
 function tipNow(){ return toWorld(tool.sx + tool.ox, tool.sy + tool.oy); }
 function toolDown(id, sx, sy, type){
-Object.assign(tool, {down:true, id, sx, sy, type, idle:0, lt:performance.now()});
+Object.assign(tool, {down:true, id, sx, sy, type, idle:0, lt:performance.now(), vel:0, still:0});
 [tool.ox, tool.oy] = gripOff(type);
-const w = tipNow(); tool.x = w.x; tool.y = w.y; tool.px = w.x; tool.py = w.y;
+const w = tipNow(); tool.x = w.x; tool.y = w.y; tool.px = w.x; tool.py = w.y; tool.lx = w.x; tool.ly = w.y;
 }
 function toolMove(sx, sy){ tool.sx = sx; tool.sy = sy; const prev = {x:tool.x, y:tool.y}, w = tipNow(); tool.x = w.x; tool.y = w.y; return prev; }
 cvs.addEventListener('contextmenu', e => e.preventDefault());
@@ -1025,11 +1055,20 @@ const d = Math.hypot(v[0].sx - v[1].sx, v[0].sy - v[1].sy); target = clamp((sq.d
 }
 sq.p += (target - sq.p) * (1 - Math.exp(-dt * 14));
 if (sq.p > .12) camAim(b.x, b.y - 10, 1.35); else camReset();
+if (b.slAmp && sq.p > .08) {
+b.slT += dt; const w = b.hi0 - b.lo0, mn = Math.max(b.stub + .04, .12) + w / 2, mx = Math.max(mn, .9 - w / 2);
+const c = (b.lo0 + b.hi0) / 2 + b.slAmp * (Math.sin(b.slT * b.slSpd + b.phase) * .7 + Math.sin(b.slT * b.slSpd * 1.9 + b.phase * 2) * .3);
+const cc = clamp(c, mn, mx); b.lo = cc - w / 2; b.hi = cc + w / 2;
+}
 extrudeSqueeze(b, sq.p, dt);
 }
 function updLoop(dt){
 const R = eff.loopR();
 if (tool.down) {
+const mv = dist(tool.x, tool.y, tool.lx, tool.ly) / Math.max(dt, .001); tool.lx = tool.x; tool.ly = tool.y;
+tool.vel += (mv - tool.vel) * (1 - Math.exp(-dt * 12));
+if (tool.vel > 45) { tool.still = 0; tool.idle = 0; tool.p = Math.max(0, tool.p - dt * 3.5); tool.target = nearestBH(tool.x, tool.y, R * 1.8); tool.align = 1; return; }
+tool.still += dt;
 tool.p = Math.min(TOOL_MAX, tool.p + dt / .4);
 const b = nearestBH(tool.x, tool.y, R * 1.8); tool.target = b;
 if (b) {
@@ -1038,13 +1077,13 @@ if (b.hidden && tool.p > .3) reveal(b);
 if (b.prog > 0) b.phase += dt * 1.6;
 const ic = idealCenter(b), al = clamp(1 - dist(ic.x, ic.y, tool.x, tool.y) / (R * .95)); tool.align = al;
 if (tool.p > b.stub) {
-if (al < .32 && b.prog > .3) snap(b);
+if (al < .32 && b.prog > .3 && tool.still > .4) snap(b);
 else if (al > 0) {
 b.prog += dt * (.4 + .8 * al) * eff.speed() / (.55 + b.len / 38); b.alSum += al * dt; b.tSum += dt;
 b.sq -= dt; if (b.sq <= 0) { Snd.squelch(.9); b.sq = .1 + Math.random() * .09; }
 if (b.prog >= 1) { popBH(b, b.tSum > 0 && b.alSum / b.tSum >= .72); return; }
 }
-if (al < .32) { b.red = Math.min(1, b.red + dt * .35); b.dmg = true; addDamage(dt * .3); warn(b.x, b.y - b.r * 4 - 6, 'Center the loop', '#ffd27a', 16, 1.6); }
+if (al < .32 && tool.still > .4) { b.red = Math.min(1, b.red + dt * .35); b.dmg = true; addDamage(dt * .3); warn(b.x, b.y - b.r * 4 - 6, 'Center the loop', '#ffd27a', 16, 1.6); }
 }
 } else if (tool.p >= TOOL_MAX) {
 tool.idle += dt;
@@ -1538,12 +1577,12 @@ drawPopups(g);
 }
 const HINTS = {
 squeeze:'Tap a blackhead, then drag anywhere to squeeze. Keep the needle in the green.',
-tool:'Hold the loop over a blackhead and follow the green ring as it moves.',
+tool:'Slide the loop onto a blackhead, then hold still to press. Moving it around is free.',
 paint:'Paint warm wax over the dotted zone. Cover every dot.',
 set:'The wax is setting. Peel too early and it tears.',
 setReady:'Set! Grab the tab and peel left, nice and steady.',
 peel:'Keep a steady pull to the left.',
-clean:'The wax missed a few. Finish them with the loop.',
+clean:'The wax missed a few. Slide the loop onto them and hold still.',
 hidden:'The rest are hidden. Look closely at the skin.',
 wipe:'Step 1 · Wipe the oily film away with the pad.',
 scrape:'Step 2 · Scrape the crust off the top. Gentle strokes.',
@@ -1597,6 +1636,7 @@ else if (C.req === 'gentle') { ok = state.damage < 1.2; rs = ok ? 'OK' : 'too re
 else if (C.req === 'combo') { rs = `x${state.maxCombo}/5`; ok = state.maxCombo >= 5 ? true : null; }
 else if (C.req === 'perfect') { rs = `${state.perfects}/3`; ok = state.perfects >= 3 ? true : null; }
 else if (C.req === 'calm') { ok = state.flinch === 0; rs = ok ? 'OK' : 'flinched'; }
+setHid('#reqChip', C.req === 'free');
 setText('#reqText', R.text); setText('#reqState', rs); setCls('#reqChip', 'ok', ok === true); setCls('#reqChip', 'bad', ok === false);
 if (ph === 'paint') { setHid('#actionBtn', false); const en = wax.coverage >= .45; if (hc.actEn !== en) { hc.actEn = en; $('#actionBtn').disabled = !en; } }
 else setHid('#actionBtn', true);
@@ -1613,7 +1653,8 @@ if (C.req === 'calm') return state.flinch === 0;
 return false;
 }
 function starsHTML(n){ let s = ''; for (let i = 0; i < 3; i++) s += `<svg class='star${i < n ? ' on' : ''}' viewBox='0 0 24 24' aria-hidden='true'><path d='M12 2.6l2.9 6 6.5.8-4.8 4.5 1.2 6.5L12 17.3l-5.8 3.1 1.2-6.5L2.6 9.4l6.5-.8z'/></svg>`; return s; }
-function hideAll(){ for (const id of ['#menu', '#intro', '#strip', '#result', '#dayEnd', '#shop', '#hud', '#hint']) $(id).hidden = true; }
+function hideAll(){ for (const id of ['#menu', '#intro', '#strip', '#result', '#dayEnd', '#shop', '#free', '#hud', '#hint']) $(id).hidden = true; }
+const clientLabel = C => C.free ? `Free salon · ${FREE_DL[FREE.diff]}` : `Day ${C.day} · Client ${C.idx + 1}/5`;
 function renderMenu(){
 setPlain('#mDay', P.day); setPlain('#mCoins', P.coins); setPlain('#mCombo', P.rec.combo ? 'x' + P.rec.combo : '–');
 const fresh = P.day === 1 && P.idx === 0 && P.coins === 0;
@@ -1637,6 +1678,7 @@ setPlain('#inQuote', `“${C.quote}”`);
 setPlain('#inReq', C.req === 'fast' ? `${R.text} (${fmtT(state.timeLimit)})` : R.text); setPlain('#inBonus', `+${R.bonus}`);
 const hidden = BH.filter(b => b.hidden).length; const note = $('#inNote');
 if (A.mode === 'boss') { note.hidden = false; note.textContent = 'Boss client: seven steps, from wiping to measuring. Take it slow.'; }
+else if (BH.some(b => b.slAmp)) { note.hidden = false; note.textContent = `The green zone moves on this client. Follow it with your squeeze.${hidden ? ` ${hidden} of them ${hidden === 1 ? 'is' : 'are'} hidden, too.` : ''}`; }
 else if (hidden) { note.hidden = false; note.textContent = `${hidden} of them ${hidden === 1 ? 'is' : 'are'} hidden. ${eff.magOn() ? 'Your magnifier marks them with green rings.' : 'Look closely, or buy the magnifier.'}`; }
 else note.hidden = true;
 $('#intro').hidden = false;
@@ -1649,18 +1691,20 @@ if (A.mode === 'boss') { buildFilm(boss.x, boss.y, 95, false); setStage('wipe');
 state.playT = 0; hc = {};
 $('#hud').hidden = false; $('#hint').hidden = false;
 const C = state.client;
-setText('#clientNo', `Day ${C.day} · Client ${C.idx + 1}/5`); setText('#clientArea', `${C.name} · ${A.label}`); setHint();
+setText('#clientNo', clientLabel(C)); setText('#clientArea', `${C.name} · ${A.label}`); setHint();
 }
 function showResult(){
 const C = state.client, A = state.A, isBoss = A.mode === 'boss';
 const stars = isBoss ? (state.flinch === 0 && !boss.snapped ? 3 : state.flinch <= 2 ? 2 : 1) : (state.damage < 1.2 ? 3 : state.damage < 3 ? 2 : 1);
-const gentle = stars === 3 ? 10 : stars === 2 ? 5 : 0, ok = reqMet(), reqB = ok ? REQ[C.req].bonus : 0;
+const gentle = stars === 3 ? 10 : stars === 2 ? 5 : 0, ok = !C.free && reqMet(), reqB = ok ? REQ[C.req].bonus : 0;
 const bossB = isBoss ? 40 + (boss.snapped ? 0 : 20) : 0;
 const total = state.tips + gentle + reqB + bossB;
-P.coins += total; P.dayEarn += total; P.dayPerf += state.perfects; P.dayCombo = Math.max(P.dayCombo, state.maxCombo); P.dayCount += state.done;
+P.coins += total;
+if (!C.free) { P.dayEarn += total; P.dayPerf += state.perfects; P.dayCombo = Math.max(P.dayCombo, state.maxCombo); P.dayCount += state.done; }
 P.rec.combo = Math.max(P.rec.combo, state.maxCombo); P.rec.perfect += state.perfects; P.rec.total += state.done;
 const longMM = isBoss ? bossTotalMM(boss) : state.longest * PLUG_MM; P.rec.longest = Math.max(P.rec.longest, longMM);
-P.idx++; save();
+if (!C.free) P.idx++;
+save();
 hideAll(); state.phase = 'result';
 setPlain('#resClient', `${C.name} · ${A.label}`);
 setPlain('#resTitle', isBoss ? (boss.snapped ? 'Got it, in two pieces' : stars === 3 ? 'Monster out, zero tears' : 'Monster removed') : stars === 3 ? 'Squeaky clean' : stars === 2 ? 'Clean, a little red' : 'Clean, but ouch');
@@ -1672,9 +1716,10 @@ $('#resStats').innerHTML = stats.map(([v, l]) => `<div class='stat'><b>${v}</b><
 const rows = [['Tips during work', `+${state.tips}`, true]];
 if (isBoss) rows.push([boss.snapped ? 'Boss fee' : 'Boss fee + clean pull', `+${bossB}`, true]);
 rows.push([stars === 3 ? 'Gentle hands' : stars === 2 ? 'Mostly gentle' : 'Gentle hands', `+${gentle}`, gentle > 0]);
-rows.push([`Request: ${REQ[C.req].text}`, `+${REQ[C.req].bonus}`, ok]);
+if (!C.free) rows.push([`Request: ${REQ[C.req].text}`, `+${REQ[C.req].bonus}`, ok]);
 $('#resRows').innerHTML = rows.map(([l, v, on]) => `<div class='rowline${on ? '' : ' miss'}'><span>${l}</span><span>${on ? v : '+0'}</span></div>`).join('') + `<div class='rowline total'><span>Total</span><span>+${total}</span></div>`;
-$('#nextBtn').textContent = P.idx >= 5 ? 'Close the day' : 'Next client';
+$('#nextBtn').textContent = C.free ? 'Same again' : P.idx >= 5 ? 'Close the day' : 'Next client';
+$('#homeBtn').textContent = C.free ? 'Pick another' : 'Clinic menu';
 $('#result').hidden = false; Snd.chime();
 }
 function showDayEnd(){
@@ -1712,13 +1757,47 @@ sw.appendChild(b);
 }
 setPlain('#shGo', P.idx === 0 ? `Open day ${P.day}` : `Continue · day ${P.day}, client ${P.idx + 1}`);
 }
+const FREE_D = [.3, 1.6, 3.4], FREE_DL = ['Easy', 'Normal', 'Hard'], FREE_AREAS = ['nose', 'chin', 'cheek', 'forehead', 'strip', 'ear'];
+const FREE = Object.assign({area:'nose', tech:'finger', diff:1}, store.get('stc-free', {}) || {});
+if (!AREAS[FREE.area]) FREE.area = 'nose'; if (!(FREE.diff >= 0 && FREE.diff <= 2)) FREE.diff = 1;
+const faceArea = k => AREAS[k].mode === 'squeeze' || AREAS[k].mode === 'tool';
+function freeArea(){
+const base = AREAS[FREE.area]; if (!faceArea(FREE.area)) return base;
+const loop = FREE.tech === 'loop'; return Object.assign({}, base, {mode:loop ? 'tool' : 'squeeze', tech:loop ? 'Loop tool' : 'Finger squeeze'});
+}
+function renderFree(){
+const box = $('#frArea'); box.innerHTML = '';
+for (const k of FREE_AREAS) {
+const A = AREAS[k], b = document.createElement('button'); b.type = 'button';
+b.setAttribute('aria-pressed', String(FREE.area === k));
+b.innerHTML = `${A.label}<small>${faceArea(k) ? 'Fingers or loop' : A.tech}</small>`;
+b.addEventListener('click', () => { FREE.area = k; store.set('stc-free', FREE); renderFree(); });
+box.appendChild(b);
+}
+$('#frTechWrap').hidden = !faceArea(FREE.area);
+$('#frFinger').setAttribute('aria-pressed', String(FREE.tech !== 'loop')); $('#frLoop').setAttribute('aria-pressed', String(FREE.tech === 'loop'));
+for (const b of $('#frDiff').querySelectorAll('button')) b.setAttribute('aria-pressed', String(+b.dataset.d === FREE.diff));
+}
+function openFree(){ hideAll(); state.phase = 'free'; renderFree(); $('#free').hidden = false; }
+function startFree(){
+Snd.init();
+const seed = Math.floor(Math.random() * 1e9), r = mulberry32(seed);
+const C = {day:P.day, idx:0, A:freeArea(), name:pick(r, NAMES), tone:pick(r, TONES), req:'free', quote:'', seed:Math.floor(r() * 1e9), free:true, d:FREE_D[FREE.diff]};
+setupClient(C); buildSkin(); beginClient();
+}
 function openShop(){ hideAll(); state.phase = 'shop'; renderShop(); $('#shop').hidden = false; }
 $('#startBtn').addEventListener('click', startClient);
 $('#shopBtn').addEventListener('click', openShop);
+$('#freeBtn').addEventListener('click', () => { Snd.init(); openFree(); });
+$('#frBack').addEventListener('click', goMenu);
+$('#frGo').addEventListener('click', startFree);
+$('#frFinger').addEventListener('click', () => { FREE.tech = 'finger'; store.set('stc-free', FREE); renderFree(); });
+$('#frLoop').addEventListener('click', () => { FREE.tech = 'loop'; store.set('stc-free', FREE); renderFree(); });
+for (const b of $('#frDiff').querySelectorAll('button')) b.addEventListener('click', () => { FREE.diff = +b.dataset.d; store.set('stc-free', FREE); renderFree(); });
 $('#inStart').addEventListener('click', beginClient);
 $('#menuBtn').addEventListener('click', goMenu);
-$('#homeBtn').addEventListener('click', goMenu);
-$('#nextBtn').addEventListener('click', () => { if (P.idx >= 5) showDayEnd(); else startClient(); });
+$('#homeBtn').addEventListener('click', () => { if (state.client && state.client.free) openFree(); else goMenu(); });
+$('#nextBtn').addEventListener('click', () => { if (state.client && state.client.free) startFree(); else if (P.idx >= 5) showDayEnd(); else startClient(); });
 $('#deShop').addEventListener('click', openShop);
 $('#deNext').addEventListener('click', startClient);
 $('#shGo').addEventListener('click', startClient);
@@ -1738,7 +1817,7 @@ wax.peelX = wax.bbox.x1; wax.set = 0; wax.painting = false; tool.down = false; s
 });
 $('#stripBtn').addEventListener('click', () => {
 $('#strip').hidden = true; $('#hint').hidden = false; $('#hud').hidden = false; hc = {};
-const C = state.client; setText('#clientNo', `Day ${C.day} · Client ${C.idx + 1}/5`); setText('#clientArea', `${C.name} · ${state.A.label}`);
+const C = state.client; setText('#clientNo', clientLabel(C)); setText('#clientArea', `${C.name} · ${state.A.label}`);
 if (BH.some(b => b.state === 'in')) { state.phase = 'clean'; Object.assign(tool, {x:318, y:520, p:0, down:false}); setHint(); }
 else { state.phase = 'finishing'; state.finishAt = state.t + .3; setHint('finishing'); }
 });

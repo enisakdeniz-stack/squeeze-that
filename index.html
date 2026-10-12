@@ -596,6 +596,36 @@ return {x, y, R, shape, flakes, nF, cracks, stage:'wipe', segs:new Array(12).fil
 dir:-Math.PI / 2, rootLen:Math.min(110, 78 + d * 3), snapped:false, pain:0, red:0, sq:0, cleared:0, film:null, filmDirty:false, sampleT:0,
 measureT:0, piece:null, pulledLen:0, extraLen:0, gone:false, creakT:0, stageNo:1};
 }
+function varyBH(r, d, mode){
+for (const b of BH) {
+if (b.len > b.r * 7) continue;
+const t = r();
+if (t < .3) { b.r *= .62; b.len = b.r * between(r, 2, 3.4); }
+else if (t < .76) {}
+else if (t < .93) { b.r *= 1.28; b.len = b.r * between(r, 5, 7); }
+else { b.r *= 1.2; b.len = b.r * between(r, 10, 14); b.curl *= 2; }
+b.r = Math.max(2, b.r);
+}
+const nT = mode === 'squeeze' ? Math.min(4, 1 + Math.floor(d * .8)) : Math.min(2, Math.floor(d * .6));
+const cands = BH.filter(b => b.r >= 3).sort(() => r() - .5);
+let made = 0;
+for (const b of cands) {
+if (made >= nT) break;
+const pr = b.r * between(r, .55, .85);
+for (let k = 0; k < 10; k++) {
+const a = r() * TAU, dd = (b.r + pr) * 1.7 + 2, x = b.x + Math.cos(a) * dd, y = b.y + Math.sin(a) * dd;
+if (BH.every(o => o === b || dist(o.x, o.y, x, y) > (o.r + pr) * 2.2 + 6)) {
+const t = makeBH(r, x, y, pr); t.len = pr * between(r, 3, 5.5); t.dir = b.dir + (r() - .5) * .5;
+t.twin = b; b.twin = t; BH.push(t); made++; break;
+}
+}
+}
+}
+function twinFollow(b){
+const t = b.twin; if (!t || t.state !== 'in' || b.prog <= 0) return;
+if (t.hidden) reveal(t);
+const target = Math.min(.97, b.prog * .92); if (t.prog < target) t.prog = target;
+}
 function setupClient(C){
 state.client = C; state.A = C.A;
 const A = C.A, r = mulberry32(C.seed), d = diffOf(C);
@@ -617,6 +647,7 @@ resetWax(); tool.x = 330; tool.y = 520;
 } else {
 boss = makeBoss(r, d); tool.x = 300; tool.y = 500;
 }
+if (A.mode === 'squeeze' || A.mode === 'tool') varyBH(r, d, A.mode);
 if (A.mode === 'squeeze' || A.mode === 'tool') {
 const h = d >= 1.5 ? Math.min(4, Math.floor(d / 1.5)) : 0;
 BH.slice().sort(() => r() - .5).slice(0, h).forEach(b => { b.hidden = true; });
@@ -784,6 +815,7 @@ if (p < b.lo - .12) k = 0; else if (p < b.lo) k = .35; else if (p <= b.hi) k = 1
 if (k > 0) {
 if (b.hidden) reveal(b);
 b.prog += dt * k * eff.speed() / (.55 + b.len / 38); b.tSum += dt; if (p >= b.lo && p <= b.hi) b.inBand += dt;
+twinFollow(b);
 b.sq -= dt; if (b.sq <= 0) { Snd.squelch(.6 + p * .6); b.sq = .1 + Math.random() * .09; }
 }
 if (p > b.hi && p <= .92) b.red = Math.min(1, b.red + dt * .3 * eff.soft());
@@ -800,7 +832,7 @@ state.done++; state.longest = Math.max(state.longest, b.len);
 const long = b.len > b.r * 6.5, clean = !b.dmg, yTop = b.y - b.r * 4 - 10, isPerf = perfect && clean;
 if (clean) comboUp(b.x, yTop - 24); else comboBreak();
 if (isPerf) { state.perfects++; popup(b.x, yTop, 'PERFECT!', '#7be0a0', 22); Snd.perfect(); }
-else if (long) popup(b.x, yTop, `Long one! ${(b.len * PLUG_MM).toFixed(1)} mm`, '#ffcb4d', 19);
+else if (long) popup(b.x, yTop, `${b.len > b.r * 9 ? 'Huge one!' : 'Long one!'} ${(b.len * PLUG_MM).toFixed(1)} mm`, '#ffcb4d', b.len > b.r * 9 ? 22 : 19);
 else popup(b.x, yTop, clean ? 'Nice' : 'Out', '#fff7e8', 16);
 earn(2 + (isPerf ? 3 : 0) + (long ? 2 : 0), b.x, b.y);
 Snd.pop(long ? 1.4 : 1); buzz(long ? [12, 30, 18] : 14);
@@ -809,6 +841,11 @@ if (state.phase === 'squeeze') {
 let nb = null, nd = 1e9;
 for (const o of BH) { if (o.state !== 'in' || o.hidden) continue; const d = dist(o.x, o.y, b.x, b.y); if (d < nd) { nd = d; nb = o; } }
 sel = nb;
+}
+const tw = b.twin; b.twin = null;
+if (tw && tw.state === 'in') {
+tw.twin = null;
+if (tw.prog > .55) { tw.dmg = tw.dmg || b.dmg; popup((b.x + tw.x) / 2, yTop - 26, 'DOUBLE POP!', '#ff9ad0', 24); earn(4, tw.x, tw.y); state.slow = .5; cam.punch = .08; buzz([10, 20, 10]); popBH(tw, perfect); return; }
 }
 checkDone();
 }
@@ -1081,7 +1118,7 @@ const ic = idealCenter(b), al = clamp(1 - dist(ic.x, ic.y, tool.x, tool.y) / (R 
 if (tool.p > b.stub) {
 if (al < .32 && b.prog > .3 && tool.still > .4) snap(b);
 else if (al > 0) {
-b.prog += dt * (.4 + .8 * al) * eff.speed() / (.55 + b.len / 38); b.alSum += al * dt; b.tSum += dt;
+b.prog += dt * (.4 + .8 * al) * eff.speed() / (.55 + b.len / 38); b.alSum += al * dt; b.tSum += dt; twinFollow(b);
 b.sq -= dt; if (b.sq <= 0) { Snd.squelch(.9); b.sq = .1 + Math.random() * .09; }
 if (b.prog >= 1) { popBH(b, b.tSum > 0 && b.alSum / b.tSum >= .72); return; }
 }
@@ -1590,7 +1627,7 @@ ctx.drawImage(tex.c, tex.x0, tex.y0, tex.TW, tex.TH);
 const g = ctx;
 for (const m of state.marks) { g.strokeStyle = `rgba(222,84,80,${(.5 * m.a).toFixed(3)})`; g.lineWidth = 2.6; g.beginPath(); g.arc(m.x, m.y, (m.r || 11) + .5, 0, TAU); g.stroke(); }
 if (boss) drawBoss(g, boss);
-for (const b of BH) drawBH(g, b, sq && sq.b === b ? sq.p : (tool.down && tool.target === b ? tool.p * .6 : 0));
+for (const b of BH) drawBH(g, b, sq && sq.b === b ? sq.p : sq && sq.b.twin === b ? sq.p * .7 : (tool.down && tool.target === b ? tool.p * .6 : 0));
 if (boss && boss.film && (boss.stage === 'wipe' || boss.stage === 'clean')) g.drawImage(fm, 0, 0, LW, LH);
 if (state.A && state.A.mode === 'wax') drawWaxLayer(g);
 drawParticles(g);

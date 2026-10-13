@@ -127,6 +127,7 @@ body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--body);
 .chip.coin b{color:var(--sebum)}
 .chip.combo{background:rgba(255,203,77,.16);border-color:rgba(255,203,77,.5);color:var(--sebum)}
 .chip.req{color:var(--ink-soft);min-width:0}
+.chip.techsw{pointer-events:auto;cursor:pointer;color:var(--ink);font-family:var(--body);background:rgba(90,139,255,.22);border-color:rgba(90,139,255,.6)}
 .chip.req span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .chip.req.ok b{color:var(--mint)}
 .chip.req.bad b{color:var(--red)}
@@ -157,6 +158,7 @@ body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--body);
 <div class='chips'>
 <span class='chip coin'><span class='coin-dot' aria-hidden='true'></span><b id='coinVal'>0</b></span>
 <span class='chip combo' id='comboChip' hidden>COMBO <b id='comboVal'>x2</b></span>
+<button class='chip techsw' id='techBtn' type='button' hidden>Use loop</button>
 <span class='chip req' id='reqChip'><span id='reqText'>Request</span><b id='reqState'></b></span>
 </div>
 </header>
@@ -177,6 +179,14 @@ body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--body);
 <button id='startBtn' class='btn btn-primary btn-wide' type='button'>Open the clinic</button>
 <button id='freeBtn' class='btn btn-ghost btn-wide' type='button'>Free salon</button>
 <button id='shopBtn' class='btn btn-ghost btn-wide' type='button'>Tool shop</button>
+<div class='setting'>
+<span class='eyebrow'>Squeeze blackheads with</span>
+<div class='seg seg3' role='group' aria-label='Favorite technique' id='techSeg'>
+<button type='button' data-t='finger' aria-pressed='false'>Fingers</button>
+<button type='button' data-t='loop' aria-pressed='false'>Loop tool</button>
+<button type='button' data-t='mix' aria-pressed='true'>Mix</button>
+</div>
+</div>
 <div class='setting'>
 <span class='eyebrow'>Hold tools with your</span>
 <div class='seg' role='group' aria-label='Tool grip hand'>
@@ -283,7 +293,7 @@ const store = {
 get(k, d){ try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
 set(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
 };
-const DEF = {v:2, coins:0, day:1, idx:0, upg:{steam:0, loop:0, mag:0, wax:0, soft:0, tweez:0}, gloves:['bare', 'blue'], glove:'bare', hand:'right', gm:1,
+const DEF = {v:2, coins:0, day:1, idx:0, upg:{steam:0, loop:0, mag:0, wax:0, soft:0, tweez:0}, gloves:['bare', 'blue'], glove:'bare', hand:'right', gm:1, tech:'mix',
 rec:{combo:0, longest:0, total:0, perfect:0}, dayEarn:0, dayPerf:0, dayCombo:0, dayCount:0};
 function loadP(){
 const base = JSON.parse(JSON.stringify(DEF)), p = store.get('stc2', null);
@@ -560,10 +570,12 @@ g.fillStyle = gr; g.fillRect(0, 0, cw, ch);
 tex.c = c;
 for (const b of BH) b.spr = null;
 }
+function techArea(A, t){ const loop = t === 'loop'; return Object.assign({}, A, {mode:loop ? 'tool' : 'squeeze', tech:loop ? 'Loop tool' : 'Finger squeeze'}); }
 function makeClient(day, idx){
 const r = mulberry32(day * 7919 + idx * 104729 + 13);
 const sched = day === 1 ? [['nose'], ['cheek'], ['strip'], ['chin', 'forehead'], ['ear']] : [['nose', 'chin'], ['cheek', 'forehead'], ['strip'], ['nose', 'chin', 'cheek', 'forehead'], ['ear']];
-const A = AREAS[pick(r, sched[idx])];
+let A = AREAS[pick(r, sched[idx])];
+if ((A.mode === 'squeeze' || A.mode === 'tool') && (P.tech === 'finger' || P.tech === 'loop')) A = techArea(A, P.tech);
 const pool = A.mode === 'boss' ? ['calm', 'fast'] : A.mode === 'wax' ? ['gentle', 'fast'] : (day === 1 && idx === 0 ? ['gentle'] : ['gentle', 'fast', 'combo', 'perfect']);
 const req = pick(r, pool);
 return {day, idx, A, name:pick(r, NAMES), tone:pick(r, TONES), req, quote:pick(r, REQ[req].quotes), seed:Math.floor(r() * 1e9)};
@@ -576,7 +588,7 @@ const tool = {x:300, y:520, px:300, py:520, sx:0, sy:0, ox:0, oy:0, type:'', p:0
 const ptrs = new Map();
 function makeBH(r, x, y, rad){
 const shape = []; for (let k = 0; k < 9; k++) shape.push(.8 + r() * .34);
-return {x, y, r:rad, shape, rot:r() * TAU, len:rad * between(r, 2.6, 5.4), stub:between(r, .18, .4), prog:0, state:'in', red:0,
+return {x, y, r:rad, shape, rot:r() * TAU, len:rad * between(r, 4, 7.5), stub:between(r, .18, .4), prog:0, state:'in', red:0,
 dir:-Math.PI / 2 + (r() - .5) * 1.5, curl:(r() - .5) * .1, capped:true,
 sebum:pick(r, ['#efe0b2', '#f3e9cc', '#e6d6a6', '#ecdfbd']), cap:pick(r, ['#1a120d', '#22170f', '#140e0b']),
 cov:0, decided:false, goneT:0, sq:0, lo:.4, hi:.62, inBand:0, tSum:0, alSum:0, dmg:false, hidden:false, phase:r() * TAU, drift:0, spr:null};
@@ -613,14 +625,15 @@ measureT:0, piece:null, pulledLen:0, extraLen:0, gone:false, creakT:0, stageNo:1
 }
 function varyBH(r, d, mode){
 for (const b of BH) {
-if (b.len > b.r * 7) continue;
+if (b.len > b.r * 10) continue;
 const t = r();
-if (t < .3) { b.r *= .62; b.len = b.r * between(r, 2, 3.4); }
-else if (t < .76) {}
-else if (t < .93) { b.r *= 1.28; b.len = b.r * between(r, 5, 7); }
-else { b.r *= 1.2; b.len = b.r * between(r, 10, 14); b.curl *= 2; }
+if (t < .25) { b.r *= .62; b.len = b.r * between(r, 3.5, 6); }
+else if (t < .66) {}
+else if (t < .86) { b.r *= 1.28; b.len = b.r * between(r, 8, 11); }
+else { b.r *= 1.2; b.len = b.r * between(r, 15, 21); b.curl *= 2; }
 b.r = Math.max(2, b.r);
 }
+for (const b of BH) { const m = 2.4 / Math.max(1, b.len); b.curl = clamp(b.curl, -m, m); }
 const nT = mode === 'squeeze' ? Math.min(4, 1 + Math.floor(d * .8)) : Math.min(2, Math.floor(d * .6));
 const cands = BH.filter(b => b.r >= 3).sort(() => r() - .5);
 let made = 0;
@@ -630,7 +643,7 @@ const pr = b.r * between(r, .55, .85);
 for (let k = 0; k < 10; k++) {
 const a = r() * TAU, dd = (b.r + pr) * 1.7 + 2, x = b.x + Math.cos(a) * dd, y = b.y + Math.sin(a) * dd;
 if (BH.every(o => o === b || dist(o.x, o.y, x, y) > (o.r + pr) * 2.2 + 6)) {
-const t = makeBH(r, x, y, pr); t.len = pr * between(r, 3, 5.5); t.dir = b.dir + (r() - .5) * .5;
+const t = makeBH(r, x, y, pr); t.len = pr * between(r, 5, 9); t.dir = b.dir + (r() - .5) * .5;
 t.twin = b; b.twin = t; BH.push(t); made++; break;
 }
 }
@@ -651,7 +664,8 @@ Object.assign(tool, {down:false, p:0, x:300, y:520, px:300, py:520, target:null,
 camReset(); cam.x = cam.tx; cam.y = cam.ty; cam.z = cam.tz; cam.punch = 0;
 if (A.mode === 'squeeze') {
 BH = scatter(r, Math.min(13, 6 + Math.floor(d * 1.2)), 210, 330, 150, 170, 3.4, 6.4);
-BH.slice().sort((a, b) => b.r - a.r).slice(0, d > 2 ? 3 : 2).forEach(b => { b.len = b.r * between(r, 7.5, 9.5); b.curl *= 1.6; });
+BH.slice().sort((a, b) => b.r - a.r).slice(0, d > 2 ? 3 : 2).forEach(b => { b.len = b.r * between(r, 11, 15); b.curl *= 1.6; });
+BH.forEach(b => { b.drift = clamp(1.5 + d * .6, 1.5, 5) * (1 - .2 * P.upg.loop); });
 } else if (A.mode === 'tool') {
 BH = scatter(r, Math.min(14, 7 + Math.floor(d * 1.3)), 210, 335, 118, 172, 2.8, 5);
 BH.forEach(b => { b.drift = clamp(1.5 + d * .6, 1.5, 5) * (1 - .2 * P.upg.loop); });
@@ -668,7 +682,7 @@ const h = d >= 1.5 ? Math.min(4, Math.floor(d / 1.5)) : 0;
 BH.slice().sort(() => r() - .5).slice(0, h).forEach(b => { b.hidden = true; });
 }
 const bw = clamp(.22 - d * .03, .09, .22) + (P.upg.mag >= 2 ? .03 * (P.upg.mag - 1) : 0);
-const slide = A.mode === 'squeeze' && d >= 1;
+const slide = (A.mode === 'squeeze' || A.mode === 'tool') && d >= 1;
 BH.forEach(b => {
 b.stub = clamp(b.stub + Math.min(.15, d * .02) - .06 * P.upg.steam + (A.mode === 'wax' ? between(r, 0, .2) : 0), .08, .6);
 const c = between(r, .46, .66); b.lo = Math.max(b.stub + .04, c - bw / 2); b.hi = b.lo + bw;
@@ -829,7 +843,7 @@ let k = 0;
 if (p < b.lo - .12) k = 0; else if (p < b.lo) k = .35; else if (p <= b.hi) k = 1; else if (p <= .92) k = .7; else k = .45;
 if (k > 0) {
 if (b.hidden) reveal(b);
-b.prog += dt * k * eff.speed() / (.55 + b.len / 38); b.tSum += dt; if (p >= b.lo && p <= b.hi) b.inBand += dt;
+b.prog += dt * k * eff.speed() / (.55 + b.len / 62); b.tSum += dt; if (p >= b.lo && p <= b.hi) b.inBand += dt;
 twinFollow(b);
 b.sq -= dt; if (b.sq <= 0) { Snd.squelch(.6 + p * .6); b.sq = .1 + Math.random() * .09; }
 }
@@ -844,14 +858,14 @@ function idealCenter(b){ if (b.prog <= 0) return {x:b.x, y:b.y}; const d = b.dri
 function popBH(b, perfect){
 b.prog = 0; b.state = 'gone'; b.goneT = 0; b.hidden = false; spawnPlug(b, b.len, b.capped);
 state.done++; state.longest = Math.max(state.longest, b.len);
-const long = b.len > b.r * 6.5, clean = !b.dmg, yTop = b.y - b.r * 4 - 10, isPerf = perfect && clean;
+const long = b.len > b.r * 9, clean = !b.dmg, yTop = b.y - b.r * 4 - 10, isPerf = perfect && clean;
 if (clean) comboUp(b.x, yTop - 24); else comboBreak();
 if (isPerf) { state.perfects++; popup(b.x, yTop, 'PERFECT!', '#7be0a0', 22); Snd.perfect(); }
-else if (long) popup(b.x, yTop, `${b.len > b.r * 9 ? 'Huge one!' : 'Long one!'} ${(b.len * PLUG_MM).toFixed(1)} mm`, '#ffcb4d', b.len > b.r * 9 ? 22 : 19);
+else if (long) popup(b.x, yTop, `${b.len > b.r * 14 ? 'MONSTER!' : 'Long one!'} ${(b.len * PLUG_MM).toFixed(1)} mm`, '#ffcb4d', b.len > b.r * 14 ? 24 : 19);
 else popup(b.x, yTop, clean ? 'Nice' : 'Out', '#fff7e8', 16);
-earn(2 + (isPerf ? 3 : 0) + (long ? 2 : 0), b.x, b.y);
+earn(2 + (isPerf ? 3 : 0) + (long ? 2 : 0) + Math.floor(b.len * PLUG_MM / 3), b.x, b.y);
 Snd.pop(long ? 1.4 : 1); buzz(long ? [12, 30, 18] : 14);
-if (long || (isPerf && b.len > b.r * 5)) { state.slow = .5; cam.punch = .07; }
+if (long || (isPerf && b.len > b.r * 7)) { state.slow = b.len > b.r * 14 ? .9 : .5; cam.punch = b.len > b.r * 14 ? .1 : .07; if (b.len > b.r * 14) { state.shake = .25; Snd.big(); } }
 if (state.phase === 'squeeze') {
 let nb = null, nd = 1e9;
 for (const o of BH) { if (o.state !== 'in' || o.hidden) continue; const d = dist(o.x, o.y, b.x, b.y); if (d < nd) { nd = d; nb = o; } }
@@ -1133,7 +1147,7 @@ const ic = idealCenter(b), al = clamp(1 - dist(ic.x, ic.y, tool.x, tool.y) / (R 
 if (tool.p > b.stub) {
 if (al < .32 && b.prog > .3 && tool.still > .4) snap(b);
 else if (al > 0) {
-b.prog += dt * (.4 + .8 * al) * eff.speed() / (.55 + b.len / 38); b.alSum += al * dt; b.tSum += dt; twinFollow(b);
+b.prog += dt * (.4 + .8 * al) * eff.speed() / (.55 + b.len / 62); b.alSum += al * dt; b.tSum += dt; twinFollow(b);
 b.sq -= dt; if (b.sq <= 0) { Snd.squelch(.9); b.sq = .1 + Math.random() * .09; }
 if (b.prog >= 1) { popBH(b, b.tSum > 0 && b.alSum / b.tSum >= .72); return; }
 }
@@ -1714,6 +1728,7 @@ setHid('#reqChip', C.req === 'free');
 setText('#reqText', R.text); setText('#reqState', rs); setCls('#reqChip', 'ok', ok === true); setCls('#reqChip', 'bad', ok === false);
 if (ph === 'paint') { setHid('#actionBtn', false); const en = wax.coverage >= .45; if (hc.actEn !== en) { hc.actEn = en; $('#actionBtn').disabled = !en; } }
 else setHid('#actionBtn', true);
+const canSw = ph === 'squeeze' || ph === 'tool'; setHid('#techBtn', !canSw); if (canSw) setText('#techBtn', ph === 'squeeze' ? '⇄ Use loop' : '⇄ Use fingers');
 const onlyHidden = (ph === 'squeeze' || ph === 'tool') && BH.some(b => b.state === 'in') && BH.every(b => b.state !== 'in' || b.hidden);
 if (onlyHidden !== !!hc.onlyHidden) { hc.onlyHidden = onlyHidden; if (onlyHidden) setHint('hidden'); else setHint(); }
 }
@@ -1731,12 +1746,24 @@ function track(name){ try { if (window.goatcounter && window.goatcounter.count) 
 const GAME_URL = 'https://enisakdeniz-stack.github.io/squeeze-that/';
 let shareText = '';
 function shareX(text, tag){ track('share-' + tag); const u = 'https://x.com/intent/post?text=' + encodeURIComponent(text) + '&url=' + encodeURIComponent(GAME_URL); window.open(u, '_blank', 'noopener'); }
+function switchTech(){
+const A = state.A, ph = state.phase; if (!A || (ph !== 'squeeze' && ph !== 'tool')) return;
+const to = ph === 'squeeze' ? 'loop' : 'finger';
+P.tech = to; save(); if (state.client.free) { FREE.tech = to; store.set('stc-free', FREE); }
+state.A = techArea(A, to); state.client.A = state.A;
+sq = null; ptrs.clear(); Object.assign(tool, {down:false, p:0, target:null, vel:0, still:0});
+if (to === 'squeeze' || to === 'finger') { if (!sel || sel.state !== 'in' || sel.hidden) sel = BH.filter(b => b.state === 'in' && !b.hidden).sort((a, b) => b.r - a.r)[0] || null; }
+state.phase = state.A.mode; camReset(); hc = {}; setHint(); Snd.tick();
+const C = state.client; setText('#clientNo', clientLabel(C)); setText('#clientArea', `${C.name} · ${state.A.label}`);
+popup(cam.x, cam.y - 140, to === 'loop' ? 'Loop tool' : 'Fingers', '#86a9ff', 18);
+}
 function hideAll(){ for (const id of ['#menu', '#intro', '#strip', '#result', '#dayEnd', '#shop', '#free', '#hud', '#hint']) $(id).hidden = true; }
 const clientLabel = C => C.free ? `Free salon · ${FREE_DL[FREE.diff]}` : `Day ${C.day} · Client ${C.idx + 1}/5`;
 function renderMenu(){
 setPlain('#mDay', P.day); setPlain('#mCoins', P.coins); setPlain('#mCombo', P.rec.combo ? 'x' + P.rec.combo : '–');
 const fresh = P.day === 1 && P.idx === 0 && P.coins === 0;
 $('#startBtn').textContent = fresh ? 'Open the clinic' : P.idx >= 5 ? `Close day ${P.day}` : `Continue · day ${P.day}, client ${P.idx + 1}`;
+for (const b of $('#techSeg').querySelectorAll('button')) b.setAttribute('aria-pressed', String(b.dataset.t === (P.tech || 'mix')));
 $('#handR').setAttribute('aria-pressed', String(P.hand !== 'left')); $('#handL').setAttribute('aria-pressed', String(P.hand === 'left'));
 }
 function setPlain(sel_, v){ $(sel_).textContent = String(v); }
@@ -1873,6 +1900,8 @@ setupClient(C); buildSkin(); beginClient();
 function openShop(){ hideAll(); state.phase = 'shop'; renderShop(); $('#shop').hidden = false; }
 $('#startBtn').addEventListener('click', startClient);
 $('#shopBtn').addEventListener('click', openShop);
+$('#techBtn').addEventListener('click', e => { e.stopPropagation(); Snd.init(); switchTech(); });
+for (const b of $('#techSeg').querySelectorAll('button')) b.addEventListener('click', () => { P.tech = b.dataset.t; save(); renderMenu(); });
 $('#freeBtn').addEventListener('click', () => { Snd.init(); openFree(); });
 $('#frBack').addEventListener('click', goMenu);
 $('#frGo').addEventListener('click', startFree);

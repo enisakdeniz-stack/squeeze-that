@@ -7,6 +7,19 @@
 <meta name='description' content='Squeeze That: a satisfying blackhead clinic game. Squeeze, scoop, wax and scrape your clients clean.'>
 <style>[hidden]{display:none!important}img{max-width:100%}</style>
 <title>Squeeze That Clinic</title>
+<meta property='og:type' content='website'>
+<meta property='og:url' content='https://enisakdeniz-stack.github.io/squeeze-that/'>
+<meta property='og:title' content='Squeeze That Clinic: the blackhead game'>
+<meta property='og:description' content='Squeeze, scoop, wax and pull. Can you get past day 3?'>
+<meta property='og:image' content='https://enisakdeniz-stack.github.io/squeeze-that/og.png'>
+<meta property='og:image:width' content='1200'>
+<meta property='og:image:height' content='630'>
+<meta name='twitter:card' content='summary_large_image'>
+<meta name='twitter:site' content='@SqueezeThatpimp'>
+<meta name='twitter:title' content='Squeeze That Clinic: the blackhead game'>
+<meta name='twitter:description' content='Squeeze, scoop, wax and pull. Can you get past day 3?'>
+<meta name='twitter:image' content='https://enisakdeniz-stack.github.io/squeeze-that/og.png'>
+<script data-goatcounter='https://squeezethat.goatcounter.com/count' async src='https://gc.zgo.at/count.js'></script>
 <link rel='preconnect' href='https://fonts.googleapis.com'>
 <link rel='preconnect' href='https://fonts.gstatic.com' crossorigin>
 <link rel='stylesheet' href='https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;800&family=Lilita+One&display=swap'>
@@ -204,6 +217,7 @@ body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--body);
 <div class='stats' id='resStats'></div>
 <div class='rows' id='resRows'></div>
 <button id='nextBtn' class='btn btn-primary btn-wide' type='button'>Next client</button>
+<button id='shareBtn' class='btn btn-ghost btn-wide' type='button'>Share on X</button>
 <button id='homeBtn' class='btn btn-ghost btn-wide' type='button'>Clinic menu</button>
 </section>
 </div>
@@ -213,6 +227,7 @@ body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--body);
 <h2 class='big' id='deTitle'>+0 tips today</h2>
 <div class='stats' id='deStats'></div>
 <button id='deShop' class='btn btn-primary btn-wide' type='button'>Visit the tool shop</button>
+<button id='deShare' class='btn btn-ghost btn-wide' type='button'>Share on X</button>
 <button id='deNext' class='btn btn-ghost btn-wide' type='button'>Open day 2</button>
 </section>
 </div>
@@ -1420,8 +1435,8 @@ const k = p || 0, bare = P.glove === 'bare' || !GLOVES[P.glove], [c0, c1, c2] = 
 if (k > 0) { const cr = g.createRadialGradient(tx, ty, 0, tx, ty, 16); cr.addColorStop(0, `rgba(120,48,40,${(.22 * k).toFixed(3)})`); cr.addColorStop(1, 'rgba(120,48,40,0)'); g.fillStyle = cr; circle(g, tx, ty, 16); }
 const cx = tx - Math.cos(ang) * 30, cy = ty - Math.sin(ang) * 30;
 g.save(); g.translate(cx, cy); g.rotate(ang);
-g.fillStyle = 'rgba(20,8,8,.28)'; g.beginPath(); g.ellipse(5, 7, 36, 24, 0, 0, TAU); g.fill(); g.fillRect(-135, -17, 140, 48);
-const body = () => { g.beginPath(); g.moveTo(-140, -24); g.lineTo(-60, -23); g.bezierCurveTo(-20, -22, 4, -23, 18, -19); g.bezierCurveTo(40, -13, 40, 13, 18, 19); g.bezierCurveTo(4, 23, -20, 22, -60, 23); g.lineTo(-140, 24); g.closePath(); };
+g.fillStyle = 'rgba(20,8,8,.28)'; g.beginPath(); g.ellipse(5, 7, 36, 24, 0, 0, TAU); g.fill(); g.fillRect(-415, -17, 420, 48);
+const body = () => { g.beginPath(); g.moveTo(-420, -24); g.lineTo(-60, -23); g.bezierCurveTo(-20, -22, 4, -23, 18, -19); g.bezierCurveTo(40, -13, 40, 13, 18, 19); g.bezierCurveTo(4, 23, -20, 22, -60, 23); g.lineTo(-420, 24); g.closePath(); };
 const gr = g.createLinearGradient(0, -24, 0, 24);
 if (bare) { gr.addColorStop(0, '#c98f72'); gr.addColorStop(.18, c0); gr.addColorStop(.5, c1); gr.addColorStop(.85, c2); gr.addColorStop(1, '#7d4a3a'); }
 else { gr.addColorStop(0, c0); gr.addColorStop(.45, c1); gr.addColorStop(1, c2); }
@@ -1442,7 +1457,7 @@ g.strokeStyle = 'rgba(250,226,214,.7)'; g.lineWidth = 1.6; g.beginPath(); g.move
 g.fillStyle = 'rgba(255,255,255,.55)'; g.beginPath(); g.ellipse(8, -6, 9, 2.2, -.05, 0, TAU); g.fill();
 g.fillStyle = 'rgba(255,240,230,.22)'; g.beginPath(); g.ellipse(-60, -12, 70, 3.5, 0, 0, TAU); g.fill();
 } else {
-g.fillStyle = 'rgba(255,255,255,.3)'; g.beginPath(); g.ellipse(4, -11, 27, 4.5, 0, 0, TAU); g.fill(); g.fillRect(-140, -15, 140, 4);
+g.fillStyle = 'rgba(255,255,255,.3)'; g.beginPath(); g.ellipse(4, -11, 27, 4.5, 0, 0, TAU); g.fill(); g.fillRect(-420, -15, 420, 4);
 g.strokeStyle = 'rgba(0,0,0,.12)'; g.lineWidth = 1.4; g.beginPath(); g.moveTo(-58, -21); g.quadraticCurveTo(-52, 0, -58, 21); g.stroke();
 g.strokeStyle = 'rgba(255,255,255,.18)'; g.lineWidth = 1; g.beginPath(); g.ellipse(15, 0, 13, 10, 0, 0, TAU); g.stroke();
 }
@@ -1712,6 +1727,10 @@ if (C.req === 'calm') return state.flinch === 0;
 return false;
 }
 function starsHTML(n){ let s = ''; for (let i = 0; i < 3; i++) s += `<svg class='star${i < n ? ' on' : ''}' viewBox='0 0 24 24' aria-hidden='true'><path d='M12 2.6l2.9 6 6.5.8-4.8 4.5 1.2 6.5L12 17.3l-5.8 3.1 1.2-6.5L2.6 9.4l6.5-.8z'/></svg>`; return s; }
+function track(name){ try { if (window.goatcounter && window.goatcounter.count) window.goatcounter.count({path:name, title:name, event:true}); } catch (e) {} }
+const GAME_URL = 'https://enisakdeniz-stack.github.io/squeeze-that/';
+let shareText = '';
+function shareX(text, tag){ track('share-' + tag); const u = 'https://x.com/intent/post?text=' + encodeURIComponent(text) + '&url=' + encodeURIComponent(GAME_URL); window.open(u, '_blank', 'noopener'); }
 function hideAll(){ for (const id of ['#menu', '#intro', '#strip', '#result', '#dayEnd', '#shop', '#free', '#hud', '#hint']) $(id).hidden = true; }
 const clientLabel = C => C.free ? `Free salon · ${FREE_DL[FREE.diff]}` : `Day ${C.day} · Client ${C.idx + 1}/5`;
 function renderMenu(){
@@ -1751,6 +1770,8 @@ state.playT = 0; hc = {};
 $('#hud').hidden = false; $('#hint').hidden = false;
 const C = state.client;
 setText('#clientNo', clientLabel(C)); setText('#clientArea', `${C.name} · ${A.label}`); setHint();
+track(C.free ? `free-start-${A.key}` : `start-d${Math.min(C.day, 9)}-c${C.idx + 1}`);
+if (A.mode === 'squeeze' && C.day === 1 && C.idx === 0 && !C.free) { sel = BH.filter(b => !b.hidden).sort((a, b) => b.r - a.r)[0] || null; setText('#hintText', 'Drag down from anywhere to squeeze the circled one. Keep the needle in the green.'); }
 }
 function showResult(){
 const C = state.client, A = state.A, isBoss = A.mode === 'boss';
@@ -1765,6 +1786,9 @@ const longMM = isBoss ? bossTotalMM(boss) : state.longest * PLUG_MM; P.rec.longe
 if (!C.free) P.idx++;
 save();
 hideAll(); state.phase = 'result';
+track(C.free ? `free-done-${A.key}` : `done-d${Math.min(C.day, 9)}-c${C.idx + 1}`);
+shareText = isBoss ? `I just pulled a ${bossTotalMM(boss).toFixed(1)} mm monster blackhead out of an ear 😳 Can you beat that?`
+: `I squeezed ${state.done}/${state.total} blackheads${state.maxCombo >= 3 ? ` with a x${state.maxCombo} combo` : ''}${state.perfects ? ` and ${state.perfects} PERFECT pops` : ''} 🫣 Can you beat me?`;
 setPlain('#resClient', `${C.name} · ${A.label}`);
 setPlain('#resTitle', isBoss ? (boss.snapped ? 'Got it, in two pieces' : stars === 3 ? 'Monster out, zero tears' : 'Monster removed') : stars === 3 ? 'Squeaky clean' : stars === 2 ? 'Clean, a little red' : 'Clean, but ouch');
 $('#resStars').innerHTML = starsHTML(stars); $('#resStars').setAttribute('aria-label', `${stars} of 3 stars`);
@@ -1783,6 +1807,8 @@ $('#result').hidden = false; Snd.chime();
 }
 function showDayEnd(){
 hideAll(); state.phase = 'dayEnd';
+track(`day-${Math.min(P.day, 9)}-closed`);
+shareText = `I just closed day ${P.day} at the blackhead clinic with +${P.dayEarn} tips 💰 How far can you get?`;
 setPlain('#deDay', `Day ${P.day} closed`); setPlain('#deTitle', `+${P.dayEarn} tips today`);
 $('#deStats').innerHTML = [[String(P.dayCount), 'Extracted'], [String(P.dayPerf), 'Perfects'], [P.dayCombo ? 'x' + P.dayCombo : '–', 'Best combo']].map(([v, l]) => `<div class='stat'><b>${v}</b><span>${l}</span></div>`).join('');
 P.day++; P.idx = 0; P.dayEarn = 0; P.dayPerf = 0; P.dayCombo = 0; P.dayCount = 0; save();
@@ -1858,6 +1884,8 @@ $('#menuBtn').addEventListener('click', goMenu);
 $('#homeBtn').addEventListener('click', () => { if (state.client && state.client.free) openFree(); else goMenu(); });
 $('#nextBtn').addEventListener('click', () => { if (state.client && state.client.free) startFree(); else if (P.idx >= 5) showDayEnd(); else startClient(); });
 $('#deShop').addEventListener('click', openShop);
+$('#shareBtn').addEventListener('click', () => shareX(shareText, 'result'));
+$('#deShare').addEventListener('click', () => shareX(shareText, 'day'));
 $('#deNext').addEventListener('click', startClient);
 $('#shGo').addEventListener('click', startClient);
 $('#shBack').addEventListener('click', goMenu);
@@ -1896,6 +1924,13 @@ let resizeT = 0;
 window.addEventListener('resize', () => { clearTimeout(resizeT); resizeT = setTimeout(() => { layout(); buildSkin(); }, 120); });
 layout();
 setupClient(makeClient(P.day, Math.min(4, P.idx))); state.phase = 'menu'; buildSkin(); renderMenu();
+(() => {
+let q; try { q = new URLSearchParams(location.search); } catch (e) { return; }
+const area = q.get('area');
+if (area && AREAS[area]) { FREE.area = area; if (q.get('tool') === 'loop') FREE.tech = 'loop'; else if (q.get('tool') === 'finger') FREE.tech = 'finger'; track('deeplink-' + area); startFree(); return; }
+const fresh = store.get('stc2', null) == null;
+if (fresh || q.has('play')) { track('quickstart'); if (P.idx >= 5) { goMenu(); return; } const C = makeClient(P.day, P.idx); setupClient(C); buildSkin(); state.phase = 'intro'; beginClient(); }
+})();
 if (document.fonts && document.fonts.load) document.fonts.load(`20px ${FONT}`).catch(() => {});
 let last = performance.now();
 function frame(now){

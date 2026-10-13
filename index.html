@@ -861,8 +861,8 @@ state.done++; state.longest = Math.max(state.longest, b.len);
 const long = b.len > b.r * 9, clean = !b.dmg, yTop = b.y - b.r * 4 - 10, isPerf = perfect && clean;
 if (clean) comboUp(b.x, yTop - 24); else comboBreak();
 if (isPerf) { state.perfects++; popup(b.x, yTop, 'PERFECT!', '#7be0a0', 22); Snd.perfect(); }
-else if (long) popup(b.x, yTop, `${b.len > b.r * 14 ? 'MONSTER!' : 'Long one!'} ${(b.len * PLUG_MM).toFixed(1)} mm`, '#ffcb4d', b.len > b.r * 14 ? 24 : 19);
-else popup(b.x, yTop, clean ? 'Nice' : 'Out', '#fff7e8', 16);
+if (long) popup(b.x, isPerf ? yTop - 30 : yTop, `${b.len > b.r * 14 ? 'MONSTER!' : 'Long one!'} ${(b.len * PLUG_MM).toFixed(1)} mm`, '#ffcb4d', b.len > b.r * 14 ? 24 : 19);
+else if (!isPerf) popup(b.x, yTop, clean ? 'Nice' : 'Out', '#fff7e8', 16);
 earn(2 + (isPerf ? 3 : 0) + (long ? 2 : 0) + Math.floor(b.len * PLUG_MM / 3), b.x, b.y);
 Snd.pop(long ? 1.4 : 1); buzz(long ? [12, 30, 18] : 14);
 if (long || (isPerf && b.len > b.r * 7)) { state.slow = b.len > b.r * 14 ? .9 : .5; cam.punch = b.len > b.r * 14 ? .1 : .07; if (b.len > b.r * 14) { state.shake = .25; Snd.big(); } }

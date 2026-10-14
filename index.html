@@ -1871,7 +1871,7 @@ setPlain('#shGo', P.idx === 0 ? `Open day ${P.day}` : `Continue · day ${P.day},
 }
 const FREE_D = [1, 2.2, 3.6], FREE_DL = ['Easy', 'Normal', 'Hard'], FREE_AREAS = ['nose', 'chin', 'cheek', 'forehead', 'strip', 'ear'];
 const FREE = Object.assign({area:'nose', tech:'finger', diff:1}, store.get('stc-free', {}) || {});
-if (!AREAS[FREE.area]) FREE.area = 'nose'; if (!(FREE.diff >= 0 && FREE.diff <= 2)) FREE.diff = 1;
+if (!Object.prototype.hasOwnProperty.call(AREAS, FREE.area)) FREE.area = 'nose'; if (!(FREE.diff >= 0 && FREE.diff <= 2)) FREE.diff = 1;
 const faceArea = k => AREAS[k].mode === 'squeeze' || AREAS[k].mode === 'tool';
 function freeArea(){
 const base = AREAS[FREE.area]; if (!faceArea(FREE.area)) return base;
@@ -1956,7 +1956,7 @@ setupClient(makeClient(P.day, Math.min(4, P.idx))); state.phase = 'menu'; buildS
 (() => {
 let q; try { q = new URLSearchParams(location.search); } catch (e) { return; }
 const area = q.get('area');
-if (area && AREAS[area]) { FREE.area = area; if (q.get('tool') === 'loop') FREE.tech = 'loop'; else if (q.get('tool') === 'finger') FREE.tech = 'finger'; track('deeplink-' + area); startFree(); return; }
+if (area && Object.prototype.hasOwnProperty.call(AREAS, area)) { FREE.area = area; if (q.get('tool') === 'loop') FREE.tech = 'loop'; else if (q.get('tool') === 'finger') FREE.tech = 'finger'; track('deeplink-' + area); startFree(); return; }
 const fresh = store.get('stc2', null) == null;
 if (fresh || q.has('play')) { track('quickstart'); if (P.idx >= 5) { goMenu(); return; } const C = makeClient(P.day, P.idx); setupClient(C); buildSkin(); state.phase = 'intro'; beginClient(); }
 })();
